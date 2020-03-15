@@ -1,0 +1,140 @@
+#!/usr/bin/env node
+var inquirer = require('inquirer');
+var path = require('path');
+var fs = require('fs');
+const program = require('commander');
+const seed=require('./seed.js');
+const cliProgress = require('cli-progress');
+const color=require('colors');
+var Spinner = require('cli-spinner').Spinner;
+
+
+var art = require('ascii-art');``
+
+program
+  .command('send <file/dir>')
+  .action((data,args)=>{
+    console.log("\n")
+    var spinner = new Spinner(art.style('            Creating => Einstein–Rosen bridge %s       ','green+bold'));
+    spinner.setSpinnerString(15);
+    spinner.start();
+    setTimeout(()=>{spinner.stop();console.log("\n");sendDecision(data)},1000)
+  }).description('Send a file / directory');
+
+
+  program
+  .command('receive <file/dir>')
+  .action((data,args)=>{
+	 console.log(data);
+  }).description('Receive a file / directory');
+
+  program.parse(process.argv);
+
+
+function getFiles(dir,choice){
+  fs.readdir(dir, (err, files)=>{
+    files.forEach((file)=>{
+        if(is_dir(file)){
+          getFiles(file,choice);
+        }else{
+          fileopt = {
+            name: file 
+         }
+        choice.push(fileopt);
+        }
+        
+    })
+  });
+}
+
+
+function sendDecision(data){
+    var isDirectory=is_dir(data);
+    if(isDirectory){
+        var dir = path.resolve(data);
+
+        fs.readdir(dir, (err, files)=>{
+          files.forEach((file)=>{
+                fileopt = {
+                  name: file 
+               }
+              choice.push(fileopt);
+              })
+        });
+    var choice = [{
+        name: 'All files'
+    },new inquirer.Separator('= Choose Selective files =')];
+    
+        inquirer
+      .prompt([
+        {
+          type: 'checkbox',
+          message: 'Select files',
+          name: 'Requiredfiles',
+          choices: choice
+            ,
+          validate: function(answer) {
+            if (answer.length < 1) {
+              return 'You must choose at least one option.';
+            }
+    
+            return true;
+          }
+        }
+      ])
+      .then(answers => {
+          var listoffiles = []
+          if(answers['Requiredfiles'].includes('All files')){
+            files.forEach((chosenfile)=>{
+                listoffiles.push(path.join(dir,chosenfile))
+            });
+          }else{
+            answers['Requiredfiles'].forEach((chosenfile)=>{
+                listoffiles.push(path.join(dir,chosenfile))
+            });
+          }
+
+art.font('wormhole', 'Doom', function(rendered,a){
+	console.log("\n\n");
+
+ 	console.log(art.style("*******************************************************",'cyan+bold'));
+	console.log(art.style(a,'cyan+bold'));
+     console.log(art.style("*******************************************************",'cyan+bold'));
+ 
+
+
+     var bar1 = new cliProgress.SingleBar({format:'Progress'.green+ ' |' + ' {bar} '.cyan + '| '+ '{percentage}% '.green+' Status: {status}'.grey}, cliProgress.Presets.shades_classic);
+seed(listoffiles,bar1);
+
+ 
+});
+
+      });
+    });
+    }else{
+
+art.font('wormhole', 'Doom', function(rendered,a){
+	console.log("\n\n");
+
+ 	console.log(art.style("*******************************************************",'cyan+bold'));
+	console.log(art.style(a,'cyan+bold'));
+   console.log(art.style("*******************************************************",'cyan+bold'));
+
+     var bar1 = new cliProgress.SingleBar({format:'Creating => Einstein–Rosen bridge '.green+ ' |' + ' {bar} '.cyan + '| '+ '{percentage}% '.green+' Status: {status}'.grey}, cliProgress.Presets.shades_classic);
+     seed(path.resolve(data),bar1);
+});
+
+    }
+
+    
+}
+
+function is_dir(path) {
+    try {
+        var stat = fs.lstatSync(path);
+        return stat.isDirectory();
+    } catch (e) {
+        // lstatSync throws an error if path doesn't exist
+        return false;
+    }
+}
