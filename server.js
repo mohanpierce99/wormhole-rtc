@@ -1,3 +1,6 @@
+
+
+
 const fs = require('fs');
 const express = require('express');
 const app = express();
@@ -11,12 +14,14 @@ const { uuid } = require('uuidv4');
 app.use(cors());
 
 app.get("/",(req,res)=>{
-    console.log("hit");
-    res.send("hai da")
+   fs.createReadStream("./view/lk.html").pipe(res);
 })
 let dict = {};
 io.on("connection", (socket) => {
     console.log("new socket");
+    var client_ip_address = socket.request.connection.remoteAddress;
+    console.log("======================");
+    console.log(`New connection from  ${client_ip_address}`);
 
     socket.on("createRoom", () => {
         let room = joiningProtocol();
@@ -87,4 +92,4 @@ function findDoor(dict,room){
     return null;
 }
 
-server.listen(4000);
+server.listen(process.env.PORT || 4000);
