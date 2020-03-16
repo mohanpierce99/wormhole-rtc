@@ -14,6 +14,8 @@ const { uuid } = require('uuidv4');
 app.use(cors());
 
 app.get("/",(req,res)=>{
+    console.log(req.ip);
+    console.log("requested");
    fs.createReadStream("./view/lk.html").pipe(res);
 })
 let dict = {};
