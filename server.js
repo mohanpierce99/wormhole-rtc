@@ -19,6 +19,7 @@ app.use(cors());
 
 app.get("/",(req,res)=>{
     const ipInfo = req.ipInfo;
+    console.log(ipInfo);
     var message = `Hey, you are browsing from ${ipInfo.city}, ${ipInfo.country}`;
         console.log(message);
    fs.createReadStream("./view/lk.html").pipe(res);
