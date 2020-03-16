@@ -5,17 +5,22 @@ const fs = require('fs');
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const expressip = require('express-ip');
+
 const generate = require("./randomdb.js")(true);
 
 var server = require("http").Server(app);
 let io = require("socket.io")(server);
+app.use(expressip().getIpInfoMiddleware);
+
 const { uuid } = require('uuidv4');
 
 app.use(cors());
 
 app.get("/",(req,res)=>{
-    console.log(req.ip);
-    console.log("requested");
+    const ipInfo = req.ipInfo;
+    var message = `Hey, you are browsing from ${ipInfo.city}, ${ipInfo.country}`;
+        console.log(message);
    fs.createReadStream("./view/lk.html").pipe(res);
 })
 let dict = {};
