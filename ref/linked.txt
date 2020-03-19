@@ -1,0 +1,71 @@
+
+
+add -  (lanobj,"interested",newobj) => rootobj.prev=newobj;newobj.prev=lanobj;newobj.next=rootobj; 
+lanobj.master/interested=newobj;
+
+
+1-2-3-4-5-6-7-8
+
+
+
+function add (lanobj,branch,node){
+    if(lanobj[branch]==null){
+        lanobj[branch]=node;
+        lanobj.prev=null;
+        lanobj.next=null;
+    }else{
+        lanobj[branch].prev=node;
+        node.next=lanobj[branch];
+        lanobj[branch]=node;
+    }
+}
+
+
+
+function del(lanobj,branch,node){
+    if(node.next){
+        node.next.prev = node.prev;
+        if(node.prev == lanobj){
+            lanobj[branch] = node.next;
+        }else{
+            node.ev
+        }
+    }else{
+        if(node.prev == lanobj){
+            lanobj[branch] = null;
+        }else{
+            node.prev.next = null;
+        }
+    }
+}
+
+
+delete - (lanobj, obj) => obj.interested ? obj.master? 
+                             => take that linkedlist
+                             
+                             if u have both prev and next 
+
+{
+                            obj.next.prev = obj.prev;
+                            if obj.prev = lanobj
+                                lanobj.master/interested = obj.next
+                            else
+                            obj.prev.next = obj.next;
+
+}               
+                   if its tail?
+                            if obj.prev = lanobj
+                                lanobj.master/interested = null
+                            else
+                            obj.prev.next = null;
+                    
+                        
+
+
+
+
+
+
+
+
+

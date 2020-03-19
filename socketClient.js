@@ -1,6 +1,6 @@
 var io = require('socket.io-client');
 
-const socketpipe=()=>{return io.connect('http://09363ae6.ngrok.io/', {reconnect: true});}
+const socketpipe=()=>{return io.connect('http://localhost:4000/', {reconnect: true});}
 
 module.exports=socketpipe;
 
