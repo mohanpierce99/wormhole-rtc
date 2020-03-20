@@ -1,4 +1,5 @@
 var fs = require('fs')
+var text = require('./list')
 var content;
 function generate(n){
     let i=0,result=[];
@@ -11,7 +12,7 @@ function generate(n){
 
 module.exports = function(platform){
     if(platform){
-        content = fs.readFileSync("./usa.txt",'utf-8').split("\n");
+        content = text.default
     }else{
         content = fs.readFileSync("./passlist.txt",'utf-8').split("\n");
     }
