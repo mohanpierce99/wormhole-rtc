@@ -87,7 +87,8 @@ function pipeInit(pipe, callback,clip) {
             }) 
 
             pipe.on('verify', (query, cb) => {
-                if (query === thirdword) {
+                console.log(query.trim(),thirdword.trim())
+                if (query.trim() === thirdword.trim()) {
                     cb(true, magnetUri);
                 } else {
                     cb(false);

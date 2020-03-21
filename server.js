@@ -84,9 +84,11 @@ io.on("connection", (socket) => {
         let mastersock=io.sockets.connected[Object.keys(io.sockets.adapter.rooms[dict[oquery]].sockets)[0]];
         if (dict[oquery] !== undefined) {
             mastersock.emit("verify", query.slice(query.lastIndexOf("-") + 1), (res,torrent) => {
+                console.log("Reply from master");
                 if (res) {
                     socket.room=dict[oquery];
                     socket.join(dict[oquery]);
+                    console.log("torrent found !!!",torrent);
                     socket.emit("torrent-found",torrent);
                 } else {
                     socket.emit("wrong-query", query);
