@@ -13,9 +13,13 @@ function add (lanobj,branch,node){
 
 
 function search(lanobj,callback,query){
+    console.log("===========")
+    console.log(query);
     query = (query != null)? [query]:["transceiver","receiver"];
     query.forEach((x)=>{
         console.log(x);
+        console.log("===========")
+        console.log(lanobj)
         let obj=lanobj[x];
         while(obj!=null){
             callback(obj);
@@ -33,7 +37,7 @@ function del(lanobj,branch,node){
             node.prev.next = node.next;
         }
     }else{
-        if(node.prev != null){
+        if(node.prev == null){
             lanobj[branch] = null;
         }else{
             node.prev.next = null;

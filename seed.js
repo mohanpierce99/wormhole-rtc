@@ -9,13 +9,11 @@ function seed(filepath, cb) {
       cb({status:"Created and bootstrapped !",no:0});
 
     var torrent = client.seed(filepath, {
-      announce: ['http://localhost:8000/announce',
-        'udp://0.0.0.0:8000',
-        'udp://localhost:8000', 'ws://localhost:8000'
+      announce: ['https://evening-reaches-38306.herokuapp.com/announce',
+        'udp://evening-reaches-38306.herokuapp.com/', 'ws://evening-reaches-38306.herokuapp.com/'
       ]
     }, function (torrent) {
       cb({status:"Wrapping up!",no:100});
-      console.log("\n");
       res(torrent.magnetURI);
     });
 

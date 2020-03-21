@@ -11,9 +11,9 @@ function generate(n){
 
 module.exports = function(platform){
     if(platform){
-        content = fs.readFileSync("./usa.txt",'utf-8').split("\n");
+        content = fs.readFileSync("./ref/usa.txt",'utf-8').split("\n");
     }else{
-        content = fs.readFileSync("./passlist.txt",'utf-8').split("\n");
+        content = fs.readFileSync("./ref/passlist.txt",'utf-8').split("\n");
     }
      return generate;
 }

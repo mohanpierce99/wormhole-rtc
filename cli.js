@@ -1,69 +1,121 @@
 #!/usr/bin/env node
 
-var inquirer = require('inquirer');
-var path = require('path');
-var fs = require('fs');
+const inquirer = require('inquirer');
+const path = require('path');
+const fs = require('fs');
 const program = require('commander');
-const seed = require('./seed.js');
-const download=require('./download.js')
-const cliProgress = require('cli-progress');
+const {send,receive,search,joinLocal}=require('./brain.js');
 const color = require('colors');
-var Spinner = require('cli-spinner').Spinner;
-const sockclient = require('./socketClient.js');
-const generate = require("./randomdb.js")(false);
-const CFonts = require('cfonts');
-var third;
-var magnetUri;
+const utils = require("./cli-util.js");
+var clear = require('clear');
+const clip = require('./clipboard.js');
+const center = require('center-align');
+require('on-change-network')(function () {
+  process.exit();
+})
 
-CFonts.say('wormhole', {
-  font: 'block',
-  align: 'center',
-  colors: false,
-  background: 'transparent',
-  letterSpacing: 1,
-  lineHeight: 1,
-  space: true,
-  maxLength: '0',
-  gradient: ['red', 'green'],
-  independentGradient: false,
-  transitionGradient: false,
-  env: 'node'
-});
+const{updateProgress,printProgress}=utils;
 
-
-var art = require('ascii-art');
+var whchoice=[];
+var a = null;
+var amap={};
+utils.drawIntro();
+utils.hideCursor();
 
 program
-  .command('send <file/dir>')
+  .command('send [file/dir]')
+  .option('-c, --clip')
   .action((data, args) => {
-    console.log("\n")
-    var spinner = new Spinner(art.style('                                     Creating => Einstein–Rosen bridge %s       ', 'green+bold'));
-    spinner.setSpinnerString(15);
-    spinner.start();
-    setTimeout(() => {
-      spinner.stop();
+    if(args.clip){
+      let text = clip.paste();
+      var buff = new Buffer.from(text);
+      buff.name = 'clip';
+      send(buff, updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then((payload)=>{
+              console.log("\n");
+              console.log(center('Client is seeding and clipboard is ready to be copied by other localhosts'.bold.green,process.stdout.columns));
+              console.log("\n");
+              console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+              console.log("\n");
+              console.log(center("                 Your portal code : ".bold.cyan + color.bold.green(payload.wormhole.slice(0,payload.wormhole.lastIndexOf("-"))),process.stdout.columns));
+              console.log("\n");
+              console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+      });
+    }else{
       console.log("\n");
-      sendDecision(data)
-    }, 1000)
+      let spinner=utils.createSpinner();
+      spinner.start();
+      setTimeout(() => {
+        spinner.stop();
+        console.log("\n");
+        sendDecision(data)
+      }, 1000)
+    }
+    
   }).description('Send a file / directory');
 
 
 program
-  .command('receive <words>')
+  .command('receive [words]')
   .option('-p, --path <dirpath>')
+  .option('-c, --clip')
+  .option('-l, --localscan')
   .action((data, args) => {
-    if(args.path){
-      postReceive(data,path.resolve(args.path));
+    if(args.localscan){
+      let p = (args.path)?path.resolve(args.path):null;
+      search(createPrompt,updateProgress.bind(this, printProgress("Downloading Please wait ...")),false,p);
     }else{
-      postReceive(data,path.resolve("./"));
+      if(args.clip){
+        createPrompt('initial');
+        search(createPrompt,updateProgress.bind(this, printProgress("Downloading Please wait ...")),true);
+      }else if(args.path){
+        receive(data,path.resolve(args.path),updateProgress.bind(this, printProgress("Downloading Please wait ...")));
+      }else{
+        receive(data,path.resolve("./"),updateProgress.bind(this, printProgress("Downloading Please wait ...")));
+      }
     }
   }).description('Receive a file / directory');
 
 program.parse(process.argv);
 
+function createPrompt(decision, hole){
+
+  if(a != null){
+    a.ui.close();
+    clear();
+  }else{
+    clear();
+    whchoice.push(new inquirer.Separator('Which portal will it be?'));
+  }
+
+  if(decision == 'add'){
+    whchoice.push(hole[0]);
+    amap[hole[0]] = hole[1];
+  }else if(decision == 'remove'){
+    whchoice = whchoice.filter(item => item !== hole);
+    delete amap[hole];
+  }
+
+  a = inquirer.prompt([{
+    type: 'list',
+    message: 'Select wormhole',
+    name: 'selectWormhole',
+    choices: whchoice,
+    validate: function (answer) {
+      if (answer.length < 1) {
+        return 'You must choose at least one option.';
+      }
+      return true;
+    }
+  }]);
+  a.then((answer)=>{
+      let data = answer['selectWormhole'];
+      joinLocal(amap[data]);
+  });
+}
+
 function sendDecision(data) {
-  var isDirectory = is_dir(data);
-  if (isDirectory) {
+  var isDirectory = utils.is_dir(data);
+  if (isDirectory){
     var dir = path.resolve(data);
     var choice = [new inquirer.Separator('= Choose Selective files =')];
     fs.readdir(dir, (err, files) => {
@@ -94,7 +146,14 @@ function sendDecision(data) {
         }])
         .then(answer => {
           if (answer['wantAllFiles'].includes('yes')) {
-            seed(dir, updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then(postTorrent);
+            send(dir, updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then((payload)=>{
+              console.log("\n");
+              console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+              console.log("\n");
+              console.log(center("                     Your portal code : ".bold.cyan + color.bold.green(payload.wormhole),process.stdout.columns));
+              console.log("\n");
+              console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+            });
 
           } else {
             inquirer
@@ -115,105 +174,26 @@ function sendDecision(data) {
                 answers['Requiredfiles'].forEach((chosenfile) => {
                   listoffiles.push(path.join(dir, chosenfile))
                 });
-                seed(listoffiles, updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then(postTorrent);
+                send(listoffiles, updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then((payload)=>{
+                  console.log("\n");
+                  console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+                  console.log("\n");
+                  console.log(center("                     Your portal code : ".bold.cyan + color.bold.green(payload.wormhole),process.stdout.columns));
+                  console.log("\n");
+                  console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+                });
               })
           }
         });
     });
   } else {
-    seed(path.resolve(data), updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then(postTorrent);
-  }
-}
-
-function is_dir(path) {
-  try {
-    var stat = fs.lstatSync(path);
-    return stat.isDirectory();
-  } catch (e) {
-    // lstatSync throws an error if path doesn't exist
-    return false;
-  }
-}
-
-function printProgress(intro) {
-  console.log("\n");
-  var bar1 = new cliProgress.SingleBar({
-    format: intro.bold.green + ' |' + ' {bar} '.cyan + '| ' + '{percentage}% '.bold.green + ' Status: {status}'.bold.grey
-  }, cliProgress.Presets.shades_classic);
-  return bar1;
-}
-
-
-function updateProgress(bar, obj) {
-  setTimeout(() => {
-    if (obj.no == 0) {
-      bar.start(100, 0, {
-        status: obj.status
-      });
-    }
-    bar.update(obj.no, {
-      status: obj.status
-    });
-
-    if (obj.no == 100) {
-      bar.stop();
-    }
-  }, obj.timeout || 0);
-}
-
-
-function postReceive(words,path) {
-  console.log(words,path);
-  var pipe = sockclient();
-  pipe.on('connect', () => {
-    pipe.emit("req-connect",words);
-    pipe.on('torrent-found',(torrent)=>{
-      console.log(torrent);
-      download(torrent,updateProgress.bind(this, printProgress("Downloading Please wait ...")),path);
-    });
-
-    pipe.on('insufficient-word-length',()=>{
-      console.log("Wrong Query Length!");
-    });
-    pipe.on('wrong-query',()=>{
-      console.log("Wrong Query!");
-    });
-
+    send(path.resolve(data), updateProgress.bind(this, printProgress("Manipulating space time Please wait ..."))).then((payload)=>{
+      console.log("\n");
+      console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
+      console.log("\n");
+      console.log(center("                    Your portal code : ".bold.cyan + color.bold.green(payload.wormhole),process.stdout.columns));
+      console.log("\n");
+      console.log(center("-----------------------------------------------------------------".cyan,process.stdout.columns));
   });
-
 }
-
-
-function postTorrent(magnetUri) {
-  setTimeout(() => {
-    console.log('Client is seeding \n \n' + magnetUri.bold.green);
-
-  }, 2000);
-  var pipe = sockclient();
-  pipe.on('connect', () => {
-
-    pipe.emit("createRoom",(a)=>{
-console.log(a);
-    });
-  });
-
-  pipe.on('verify',(query,cb)=>{
-    console.log(query);
-    console.log(third);
-     if(query===third){
-       cb(true,magnetUri);
-     }else{
-       cb(false);
-     }
-  })
-  pipe.on("joinedRoom", (room) => {
-    third = generate(1);
-    console.log("\n");
-    console.log("-----------------------------------------------------------------".cyan);
-    console.log("\n");
-    console.log("Your portal code : ".cyan + color.bold.green(room + "-" + third));
-    console.log("\n");
-    console.log("-----------------------------------------------------------------".cyan);
-  });
-
 }

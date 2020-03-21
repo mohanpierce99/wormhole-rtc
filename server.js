@@ -13,7 +13,7 @@ const { uuid } = require('uuidv4');
 
 const masterNetwork={};
 const secret_key = crypto.randomBytes(64).toString('hex');
-const dict = {};
+let dict = {};
 
 
 app.use(expressip().getIpInfoMiddleware);
@@ -22,25 +22,16 @@ app.use(cors());
 
 app.get("/ipcheck",(req,res)=>{
     const ipInfo = req.ipInfo;
-    let token = jwt.encode({'ipInfo': ipInfo,'timestamp': + new Date()},secret_key,algorithm='HS256').decode('utf-8');
+    let token = jwt.sign({'ipInfo': ipInfo.ip,'timestamp': + new Date()},secret_key);
     res.json(token);
 });
 
-app.get("/",(req,res)=>{
-    var message = `Hey, you are browsing from ${ipInfo.city}, ${ipInfo.country}`;
-        console.log(message);
-   fs.createReadStream("./view/lk.html").pipe(res);
-})
-
 io.on("connection", (socket) => {
-    console.log("new socket");
 
-    socket.emit("lol",(ll)=>{
-        console.log(ll);
-    })
     socket.on("init",(token)=>{
-        token = jwt.decode(JSON.parse(token),secret_key,algorithms=['HS256']);
-        if(token['timestamp'] + 1000*30 <= + new Date()){
+        token = jwt.verify(token,secret_key);
+
+        if(token['timestamp'] + 1000*30 >= + new Date()){
             ip = token['ipInfo'];
             if (!(ip in masterNetwork)){
                 masterNetwork[ip]={}
@@ -48,6 +39,7 @@ io.on("connection", (socket) => {
                 masterNetwork[ip]["receiver"]=null;
             } 
             socket.cip=ip;
+            socket.emit("ipset");
         }else{
             socket.emit("IPConfig failure",false);
         }
@@ -55,29 +47,28 @@ io.on("connection", (socket) => {
 
 
     socket.on("search",()=>{
+        dict=dict;
         add(masterNetwork[socket.cip],"receiver",socket);
         search(masterNetwork[socket.cip],(sock)=>{
-            socket.emit("peerFound",[findDoor(sock.room),sock.room]);
+            socket.emit("peerFound",[findDoor(dict,sock.room),sock.room]);
         },"transceiver");
     });
 
 
-    socket.on("createRoom", (cb) => {
-
+    socket.on("createRoom", () => {
         let room = joiningProtocol();
         dict[room] = uuid();
         socket.master = true;
         socket.room=dict[room];
         socket.join(dict[room]);
-        // search(masterNetwork[socket.cip],(sock)=>{
-        //     if(sock.id==socket.id){
-        //         return;
-        //     }
-        //     sock.emit("peerFound",[room,socket.room]);
-        // });
-        // del(masterNetwork[socket.cip],"receiver",socket);
-        // add(masterNetwork[socket.cip],"transceiver",socket);
-        cb("thankyou reply from server");
+        search(masterNetwork[socket.cip],(sock)=>{
+            if(sock.id==socket.id){
+                return;
+            }
+            sock.emit("peerFound",[room,socket.room]);
+        });
+        del(masterNetwork[socket.cip],"receiver",socket);
+        add(masterNetwork[socket.cip],"transceiver",socket);
         socket.emit("joinedRoom", room);
     });
 
@@ -86,8 +77,10 @@ io.on("connection", (socket) => {
             socket.emit("insufficient-word-length", true);
         }
         let oquery = query.slice(0, query.lastIndexOf("-"));
-        console.log("query in"+oquery+"\n");
-        console.log(dict[oquery]);
+        if(!(oquery in dict)){
+            socket.emit("wrong-query", oquery);
+            return;
+        }
         let mastersock=io.sockets.connected[Object.keys(io.sockets.adapter.rooms[dict[oquery]].sockets)[0]];
         if (dict[oquery] !== undefined) {
             mastersock.emit("verify", query.slice(query.lastIndexOf("-") + 1), (res,torrent) => {
@@ -107,6 +100,18 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on('localnetjoin',(roomkey)=>{
+        if(findDoor(dict,roomkey)){
+            let mastersock=io.sockets.connected[Object.keys(io.sockets.adapter.rooms[roomkey].sockets)[0]];
+            mastersock.emit("directJoin",(torrent)=>{
+                socket.room=roomkey;
+                socket.join(roomkey);
+                socket.emit("torrent-found",torrent);            
+            })
+        }
+
+    })
+
 
 
 
@@ -115,16 +120,14 @@ io.on("connection", (socket) => {
         if (socket.master) {
             var room = socket.room;
             socket.master=false;
-            console.log("leaving "+room);
-             socket.leave(room);
 
-            // search(masterNetwork[socket.cip],(sock)=>{
-            //     if(sock.id==socket.id){
-            //         return;
-            //     }
-            //     sock.emit("peerDelete",findDoor(dict,room));
-            // });
-            // del(masterNetwork[socket.cip],"transceiver",socket);
+            search(masterNetwork[socket.cip],(sock)=>{
+                if(sock.id==socket.id){
+                    return;
+                }
+                sock.emit("peerDelete",findDoor(dict,room));
+            });
+            del(masterNetwork[socket.cip],"transceiver",socket);
             delete dict[findDoor(dict,room)];
             if(io.sockets.adapter.rooms[room]!=undefined){
                 var clients_in_the_room = io.sockets.adapter.rooms[room].sockets; 
@@ -134,7 +137,7 @@ io.on("connection", (socket) => {
             }
         }
     }else{
-            // del(masterNetwork[socket.cip],"receiver",socket);
+            del(masterNetwork[socket.cip],"receiver",socket);
         }
     });
 
@@ -142,7 +145,7 @@ io.on("connection", (socket) => {
 
 
 
-function joiningProtocol() { //Recursively calls back untill it finds a room
+function joiningProtocol() {
     const door = generate(2);
     if (dict[door] !== undefined) {
         return joiningProtocol();
