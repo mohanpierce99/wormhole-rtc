@@ -1,6 +1,6 @@
 var io = require('socket.io-client');
 
-const socketpipe=()=>{return io.connect('http://localhost:4000/', {reconnect: true});}
+const socketpipe=()=>{return io.connect('https://radiant-stream-49856.herokuapp.com/', {reconnect: true});}
 
 module.exports=socketpipe;
 

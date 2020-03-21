@@ -45,7 +45,7 @@ function pipeInit(pipe, callback,clip) {
 
         pipe.on('connect', () => {
 
-            axios.get('http://localhost:4000/ipcheck').then((response) => {
+            axios.get('https://radiant-stream-49856.herokuapp.com/ipcheck').then((response) => {
                 pipe.emit("init", response.data);
             });
 
