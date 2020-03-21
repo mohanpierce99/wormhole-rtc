@@ -69,10 +69,12 @@ io.on("connection", (socket) => {
         });
         del(masterNetwork[socket.cip],"receiver",socket);
         add(masterNetwork[socket.cip],"transceiver",socket);
+        console.log("room created"+socket.id);
         socket.emit("joinedRoom", room);
     });
 
     socket.on("req-connect", (query) => {
+        console.log("join request"+socket.id);
         if (query.split("-").length !== 3) {
             socket.emit("insufficient-word-length", true);
         }
@@ -84,7 +86,7 @@ io.on("connection", (socket) => {
         let mastersock=io.sockets.connected[Object.keys(io.sockets.adapter.rooms[dict[oquery]].sockets)[0]];
         if (dict[oquery] !== undefined) {
             mastersock.emit("verify", query.slice(query.lastIndexOf("-") + 1), (res,torrent) => {
-                console.log("Reply from master");
+                console.log("Reply from master"+socket.id);
                 if (res) {
                     socket.room=dict[oquery];
                     socket.join(dict[oquery]);
@@ -118,6 +120,7 @@ io.on("connection", (socket) => {
 
 
     socket.on("disconnect", () => {
+        console.log("leaving"+socket)
 
         if (socket.master) {
             var room = socket.room;
