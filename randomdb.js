@@ -10,6 +10,7 @@ function generate(n){
     return result.join("-");
 }
 
+
 module.exports = function(platform){
     if(platform){
         content = text;
@@ -21,5 +22,3 @@ module.exports = function(platform){
 
 
 
-
-console.log(generate());
