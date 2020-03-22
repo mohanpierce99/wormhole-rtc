@@ -105,11 +105,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on('localnetjoin',(roomkey)=>{
+        console.log("Localnetwork join",socket.id);
         if(findDoor(dict,roomkey)){
             let mastersock=io.sockets.connected[Object.keys(io.sockets.adapter.rooms[roomkey].sockets)[0]];
             mastersock.emit("directJoin",(torrent)=>{
                 socket.room=roomkey;
                 socket.join(roomkey);
+                console.log("almost emitted",socket.id);
                 socket.emit("torrent-found",torrent);            
             })
         }
