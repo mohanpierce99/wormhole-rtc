@@ -107,6 +107,7 @@ io.on("connection", (socket) => {
     socket.on('localnetjoin',(roomkey)=>{
         console.log("Localnetwork join",socket.id);
         if(findDoor(dict,roomkey)){
+            console.log("dooor found");
             let mastersock=io.sockets.connected[Object.keys(io.sockets.adapter.rooms[roomkey].sockets)[0]];
             mastersock.emit("directJoin",(torrent)=>{
                 socket.room=roomkey;
