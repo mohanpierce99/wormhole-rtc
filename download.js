@@ -7,11 +7,13 @@ var client = new WebTorrent();
 var clipswitch;
 
 function download(magnetURI, cb, path,clip) {
+    console.log("Download initiated for "+magnetURI);
     if(clip){
         clipswitch=true;
     }
     if (path == null) {
         client.add(magnetURI, callback);
+        console.log("Searching bro");
     }
     else {
         client.add(magnetURI, {

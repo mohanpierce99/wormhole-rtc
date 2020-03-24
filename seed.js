@@ -9,8 +9,8 @@ function seed(filepath, cb) {
       cb({status:"Created and bootstrapped !",no:0});
 
     var torrent = client.seed(filepath, {
-      announce: ['https://evening-reaches-38306.herokuapp.com/announce',
-        'udp://evening-reaches-38306.herokuapp.com/', 'ws://evening-reaches-38306.herokuapp.com/'
+      announce: ['http://7552d496.in.ngrok.io/announce',
+        'udp://7552d496.in.ngrok.io', 'ws://7552d496.in.ngrok.io'
       ]
     }, function (torrent) {
       cb({status:"Wrapping up!",no:100});
