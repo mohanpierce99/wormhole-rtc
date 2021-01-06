@@ -4,7 +4,7 @@
   "main": "seed.js",
   "dependencies": {
     "ascii-art": "^2.5.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "browserify": "^16.5.0",
     "center-align": "^1.0.1",
     "cfonts": "^2.8.1",
