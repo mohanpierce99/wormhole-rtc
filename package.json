@@ -21,7 +21,7 @@
     "inquirer": "^7.1.0",
     "jetty": "^0.2.1",
     "jsdom": "^16.2.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "on-change-network": "0.0.2",
     "pretty-bytes": "^5.3.0",
     "requirer": "0.0.4",
